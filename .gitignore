@@ -1,5 +1,7 @@
-.env
 node_modules/
-workspace/
-docs/
-
+screenshots/
+test-results/
+playwright-report/
+qa.spec.js
+bug-report.md
+test-results.txt
