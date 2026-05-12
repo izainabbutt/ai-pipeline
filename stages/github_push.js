@@ -50,11 +50,14 @@ async function getGitHubUser(cwd, prefix) {
 async function ensureRepo(ghUser, cwd, prefix) {
   const fullRepo = `${ghUser}/${APPS_REPO}`;
   const check = await run('gh', ['repo', 'view', fullRepo], cwd, prefix);
-  if (check.code !== 0) {
-    log('setup', `Creating central repo: ${fullRepo}`);
-    await must('gh', ['repo', 'create', APPS_REPO, '--public', '--add-readme'], cwd, prefix);
-    log('setup', `Repo created: https://github.com/${fullRepo}`);
+  if (check.code === 0) return fullRepo; // repo exists
+  // 403 = token lacks permission — don't attempt creation, surface a clear error
+  if (check.combined.includes('403')) {
+    throw new Error(`Cannot access GitHub repo ${fullRepo}: permission denied. Check GITHUB_TOKEN has 'repo' scope.`);
   }
+  log('setup', `Creating central repo: ${fullRepo}`);
+  await must('gh', ['repo', 'create', APPS_REPO, '--public', '--add-readme'], cwd, prefix);
+  log('setup', `Repo created: https://github.com/${fullRepo}`);
   return fullRepo;
 }
 
@@ -90,8 +93,15 @@ async function pushToGitHub(issueKey, summary) {
     await must('git', ['remote', 'set-url', 'origin', `https://github.com/${fullRepo}.git`], cwd, prefix);
   }
 
-  // Fetch main from the central repo (guaranteed to exist because ensureRepo uses --add-readme)
-  await must('git', ['fetch', 'origin', 'main'], cwd, prefix);
+  // Fetch main — if the repo is empty (no commits yet), seed it with an empty commit first
+  const fetchResult = await run('git', ['fetch', 'origin', 'main'], cwd, prefix);
+  if (fetchResult.code !== 0) {
+    log(issueKey, 'Remote has no main branch — pushing initial commit');
+    await must('git', ['commit', '--allow-empty', '-m', 'chore: init'], cwd, prefix);
+    await must('git', ['branch', '-M', 'main'], cwd, prefix);
+    await must('git', ['push', '-u', 'origin', 'main'], cwd, prefix);
+    await must('git', ['fetch', 'origin', 'main'], cwd, prefix);
+  }
 
   // (Re-)create feature branch from origin/main so each run is idempotent
   await run('git', ['branch', '-D', branchName], cwd, prefix); // silently fails if branch doesn't exist
