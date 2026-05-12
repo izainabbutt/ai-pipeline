@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tip Calculator</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      background: #f0f4f8;
+      min-height: 100vh;
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+      padding: 24px 16px;
+    }
+
+    .card {
+      background: #fff;
+      border-radius: 16px;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.10);
+      padding: 28px 24px;
+      width: 100%;
+      max-width: 440px;
+    }
+
+    h1 {
+      font-size: 1.4rem;
+      font-weight: 700;
+      color: #1a202c;
+      margin-bottom: 24px;
+      text-align: center;
+      letter-spacing: -0.5px;
+    }
+
+    .field { margin-bottom: 20px; }
+
+    label {
+      display: block;
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: #4a5568;
+      margin-bottom: 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    input[type="number"] {
+      width: 100%;
+      padding: 10px 14px;
+      border: 2px solid #e2e8f0;
+      border-radius: 8px;
+      font-size: 1rem;
+      color: #1a202c;
+      background: #f7fafc;
+      transition: border-color 0.15s;
+      -moz-appearance: textfield;
+    }
+    input[type="number"]::-webkit-inner-spin-button,
+    input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; }
+    input[type="number"]:focus {
+      outline: none;
+      border-color: #4299e1;
+      background: #fff;
+    }
+
+    .tip-buttons {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+    }
+
+    .tip-btn {
+      padding: 10px 6px;
+      border: 2px solid #e2e8f0;
+      border-radius: 8px;
+      background: #f7fafc;
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: #4a5568;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .tip-btn:hover { border-color: #4299e1; color: #2b6cb0; }
+    .tip-btn.active {
+      background: #4299e1;
+      border-color: #4299e1;
+      color: #fff;
+    }
+
+    #customTipWrapper {
+      margin-top: 10px;
+      display: none;
+    }
+    #customTipWrapper.visible { display: block; }
+
+    .results {
+      background: #2d3748;
+      border-radius: 12px;
+      padding: 20px;
+      margin: 24px 0 20px;
+      display: grid;
+      gap: 14px;
+    }
+
+    .result-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .result-label {
+      font-size: 0.85rem;
+      color: #a0aec0;
+      font-weight: 500;
+    }
+
+    .result-value {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: #68d391;
+    }
+
+    .result-row.total .result-value { font-size: 1.5rem; color: #fff; }
+
+    .divider {
+      border: none;
+      border-top: 1px solid #4a5568;
+    }
+
+    .btn-reset {
+      width: 100%;
+      padding: 12px;
+      background: #e53e3e;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .btn-reset:hover { background: #c53030; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>Tip Calculator</h1>
+
+    <div class="field">
+      <label for="billAmount">Bill Amount ($)</label>
+      <input type="number" id="billAmount" placeholder="0.00" min="0" step="0.01">
+    </div>
+
+    <div class="field">
+      <label>Tip %</label>
+      <div class="tip-buttons">
+        <button class="tip-btn" data-tip="10">10%</button>
+        <button class="tip-btn" data-tip="15">15%</button>
+        <button class="tip-btn active" data-tip="18">18%</button>
+        <button class="tip-btn" data-tip="20">20%</button>
+        <button class="tip-btn" data-tip="custom">Custom</button>
+      </div>
+      <div id="customTipWrapper">
+        <input type="number" id="customTip" placeholder="Enter %" min="0" step="0.1">
+      </div>
+    </div>
+
+    <div class="field">
+      <label for="numPeople">Number of People</label>
+      <input type="number" id="numPeople" placeholder="1" min="1" step="1" value="1">
+    </div>
+
+    <div class="results">
+      <div class="result-row">
+        <span class="result-label">Tip Amount</span>
+        <span class="result-value" id="displayTip">$0.00</span>
+      </div>
+      <hr class="divider">
+      <div class="result-row total">
+        <span class="result-label">Total Amount</span>
+        <span class="result-value" id="displayTotal">$0.00</span>
+      </div>
+      <hr class="divider">
+      <div class="result-row">
+        <span class="result-label">Per Person</span>
+        <span class="result-value" id="displayPerPerson">$0.00</span>
+      </div>
+    </div>
+
+    <button class="btn-reset" id="resetBtn">Reset</button>
+  </div>
+
+  <script>
+    function calculateTip(bill, tipPercent) {
+      return bill * tipPercent / 100;
+    }
+
+    function calculateTotal(bill, tipPercent) {
+      return bill + calculateTip(bill, tipPercent);
+    }
+
+    function calculatePerPerson(bill, tipPercent, people) {
+      if (people < 1) return 0;
+      return calculateTotal(bill, tipPercent) / people;
+    }
+
+    function fmt(n) {
+      return '$' + n.toFixed(2);
+    }
+
+    var selectedTip = 18;
+
+    var billInput     = document.getElementById('billAmount');
+    var numPeopleInput = document.getElementById('numPeople');
+    var customTipInput = document.getElementById('customTip');
+    var customWrapper  = document.getElementById('customTipWrapper');
+    var displayTip     = document.getElementById('displayTip');
+    var displayTotal   = document.getElementById('displayTotal');
+    var displayPerPerson = document.getElementById('displayPerPerson');
+    var tipBtns        = document.querySelectorAll('.tip-btn');
+    var resetBtn       = document.getElementById('resetBtn');
+
+    function recalculate() {
+      var bill    = parseFloat(billInput.value) || 0;
+      var people  = parseInt(numPeopleInput.value, 10) || 1;
+      var tip     = selectedTip === 'custom'
+        ? (parseFloat(customTipInput.value) || 0)
+        : selectedTip;
+
+      displayTip.textContent       = fmt(calculateTip(bill, tip));
+      displayTotal.textContent     = fmt(calculateTotal(bill, tip));
+      displayPerPerson.textContent = fmt(calculatePerPerson(bill, tip, people));
+    }
+
+    tipBtns.forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        tipBtns.forEach(function(b) { b.classList.remove('active'); });
+        btn.classList.add('active');
+
+        var val = btn.dataset.tip;
+        if (val === 'custom') {
+          selectedTip = 'custom';
+          customWrapper.classList.add('visible');
+          customTipInput.focus();
+        } else {
+          selectedTip = parseFloat(val);
+          customWrapper.classList.remove('visible');
+          customTipInput.value = '';
+        }
+        recalculate();
+      });
+    });
+
+    billInput.addEventListener('input', recalculate);
+    numPeopleInput.addEventListener('input', recalculate);
+    customTipInput.addEventListener('input', recalculate);
+
+    resetBtn.addEventListener('click', function() {
+      billInput.value     = '';
+      numPeopleInput.value = '1';
+      customTipInput.value = '';
+      selectedTip = 18;
+      tipBtns.forEach(function(b) { b.classList.remove('active'); });
+      document.querySelector('[data-tip="18"]').classList.add('active');
+      customWrapper.classList.remove('visible');
+      recalculate();
+    });
+
+    recalculate();
+  </script>
+</body>
+</html>
